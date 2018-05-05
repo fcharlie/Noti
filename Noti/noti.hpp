@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 
-struct NotiContext{
+struct Dcontext{
 	std::vector<std::wstring> urls;
 	std::wstring out;
 	int retries{ 5 };

@@ -3,6 +3,7 @@
 
 #include "pch.h"
 #include "argv.hpp"
+#include "noti.hpp"
 
 using namespace winrt;
 using namespace Windows::Foundation;
