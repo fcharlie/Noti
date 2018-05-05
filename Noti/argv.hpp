@@ -36,15 +36,15 @@ inline unsigned char _Digit_from_char(const char _Ch) noexcept // strengthened
 
 
 template<typename Integer>
-ErrorResult Integer_from_wchars(std::wstring wsv, Integer &ov, const int base) {
+ErrorResult Integer_from_wchars(std::wstring_view wsv, Integer &ov, const int base) {
 	bool msign = false;
 	auto _begin = wsv.begin();
 	auto _end = wsv.end();
 	auto _iter = _begin;
 	if constexpr(std::is_signed_v<Integer>) {
-		if (First != Last && *First == '-') {
+		if (_iter != _end && *_iter == '-') {
 			msign = true;
-			First++;
+			_iter++;
 		}
 	}
 	using Unsigned = std::make_unsigned_t<Integer>;
@@ -82,7 +82,7 @@ ErrorResult Integer_from_wchars(std::wstring wsv, Integer &ov, const int base) {
 	{
 		wchar_t wch = *_iter;
 		if (wch > CHAR_MAX) {
-			return false;
+			return ErrorResult{ L"out of range",1 };
 		}
 		const unsigned char _digit = _Digit_from_char(static_cast<char>(wch));
 
@@ -124,13 +124,13 @@ ErrorResult Integer_from_wchars(std::wstring wsv, Integer &ov, const int base) {
 }
 
 
-class ParseArgs {
+class ParseArgv {
 public:
-	ParseArgs(int argc, wchar_t *const *argv) :argc_(argc), argv_(argv) {
+	ParseArgv(int argc, wchar_t *const *argv) :argc_(argc), argv_(argv) {
 		///
 	}
-	ParseArgs(const ParseArgs&) = delete;
-	ParseArgs &operator=(const ParseArgs &) = delete;
+	ParseArgv(const ParseArgv&) = delete;
+	ParseArgv &operator=(const ParseArgv &) = delete;
 	enum HasArgs {
 		required_argument, /// -i 11 or -i=xx
 		no_argument,
@@ -168,32 +168,32 @@ private:
 	wchar_t *const *argv_;
 	std::vector<std::wstring_view> uargs;
 	int index{ 0 };
-	ErrorResult ParseInternal(std::wstring_view wvs, const std::vector<option> &opts, const ArgumentCallback &callback) {
+	ErrorResult ParseInternal(std::wstring_view arg, const std::vector<option> &opts, const ArgumentCallback &callback) {
 		/*
 		-x ; -x value -Xvalue
 		--xy;--xy=value;--xy value
 		*/
-		if (wvs.size() < 2) {
+		if (arg.size() < 2) {
 			return ErrorResult{ L"Invalid argument",1 };
 		}
 		int ch = -1;
-		HasArgs ha = no_argument;
+		HasArgs ha = optional_argument;
 		const wchar_t *optarg = nullptr;
 
-		if (wvs[1] == '-') {
+		if (arg[1] == '-') {
 			/// parse long
 			/// --name value; --name=value
 			std::wstring_view name;
-			auto pos = wvs.find('=');
+			auto pos = arg.find('=');
 			if (pos != std::wstring_view::npos) {
-				if (pos + 1 >= wvs.size()) {
-					return ErrorResult{ std::wstring(L"Incorrect argument: ").append(wvs),1 };
+				if (pos + 1 >= arg.size()) {
+					return ErrorResult{ std::wstring(L"Incorrect argument: ").append(arg),1 };
 				}
-				name = wvs.substr(2, pos);
-				optarg = wvs.data() + pos + 1;
+				name = arg.substr(2, pos);
+				optarg = arg.data() + pos + 1;
 			}
 			else {
-				name = wvs.substr(2);
+				name = arg.substr(2);
 			}
 			for (auto &o : opts) {
 				if (name.compare(o.name) == 0) {
@@ -205,18 +205,18 @@ private:
 		}
 		else {
 			/// parse short
-			ch = wvs[1];
+			ch = arg[1];
 
 			/// -x=xxx
-			if (wvs.size() == 3 && wvs[2] == '=') {
-				return ErrorResult{ std::wstring(L"Incorrect argument: ").append(wvs),1 };
+			if (arg.size() == 3 && arg[2] == '=') {
+				return ErrorResult{ std::wstring(L"Incorrect argument: ").append(arg),1 };
 			}
-			if (wvs.size() > 3) {
-				if (wvs[2] == '=') {
-					optarg = wvs.data() + 3;
+			if (arg.size() > 3) {
+				if (arg[2] == '=') {
+					optarg = arg.data() + 3;
 				}
 				else {
-					optarg = wvs.data() + 2;
+					optarg = arg.data() + 2;
 				}
 			}
 			for (auto &o : opts) {
@@ -228,16 +228,16 @@ private:
 		}
 
 		if (optarg != nullptr &&ha == no_argument) {
-			return ErrorResult{ std::wstring(L"Unacceptable input: ").append(wvs),1 };
+			return ErrorResult{ std::wstring(L"Unacceptable input: ").append(arg),1 };
 		}
-		if (ha == required_argument && optarg == nullptr) {
+		if (optarg == nullptr &&ha == required_argument) {
 			if (index + 1 >= argc_) {
-				return ErrorResult{ std::wstring(L"Missing input: ").append(wvs),1 };
+				return ErrorResult{ std::wstring(L"Missing input: ").append(arg),1 };
 			}
 			optarg = argv_[index + 1];
 			index++;
 		}
-		if (callback(ch, optarg, wvs.data())) {
+		if (callback(ch, optarg, arg.data())) {
 			return ErrorResult{};
 		}
 		return ErrorResult{ L"skipped",2 };
