@@ -94,6 +94,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="argv.hpp" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
