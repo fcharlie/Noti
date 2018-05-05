@@ -232,7 +232,7 @@ private:
 		}
 		if (optarg == nullptr &&ha == required_argument) {
 			if (index + 1 >= argc_) {
-				return ErrorResult{ std::wstring(L"Missing input: ").append(arg),1 };
+				return ErrorResult{ std::wstring(L"Option name cannot be empty: ").append(arg),1 };
 			}
 			optarg = argv_[index + 1];
 			index++;

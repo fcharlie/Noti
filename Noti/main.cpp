@@ -106,25 +106,29 @@ int ParseArgvImplement(int Argc, wchar_t **Argv, Dcontext &dctx) {
 			dctx.verbose = true;
 			break;
 		default:
-			wprintf(L"unsupport commandline: %s\n", raw != nullptr ? raw : L"unknown");
+			wprintf(L"Error Argument: %s\n", raw != nullptr ? raw : L"unknown");
 			return false;
 		}
 		return true;
 	});
 	if (err.errorcode != 0) {
-		wprintf(L"error %s\n", err.message.c_str());
+		if (err.errorcode == 1) {
+			wprintf(L"ParseArgv: %s\n", err.message.c_str());
+		}
+		return 1;
 	}
 	for (auto &v : pa.UnresolvedArgs()) {
 		dctx.urls.push_back(v.data()); /// url append
 	}
-	//wprintf(L"tries: %d\n", dctx.tries);
 	return 0;
 }
 // --content-disposition
 int wmain(int argc, wchar_t **argv)
 {
 	Dcontext dctx;
-	ParseArgvImplement(argc, argv, dctx);
+	if (ParseArgvImplement(argc, argv, dctx) != 0) {
+		return 1;
+	}
 	init_apartment();
 	Uri uri(L"http://aka.ms/cppwinrt");
 	printf("Hello, %ls!\n", uri.AbsoluteUri().c_str());
