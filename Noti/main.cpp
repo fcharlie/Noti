@@ -37,10 +37,10 @@ OPTIONS:
   -C [--content-disposition]       honor the Content-Disposition header when
                                      choosing local file names
   -h [--help]                      print noti usage information and exit
-  -L [--location]                  location redirect
-  -O [--output]                    download save to path
+  -L [--location]                  location redirect level.
+  -O [--output]                    save to path. single download task.
   -T [--tries]                     set number of retries to NUMBER (0 unlimits)
-  -U [--uri]                       set download uri.
+  -U [--uri]                       set download uri, default value.
   -v [--version]                   print noti version and exit
   -V [--verbose]                   print noti download verbose message
 )";
