@@ -130,7 +130,6 @@ int wmain(int argc, wchar_t **argv)
 		return 1;
 	}
 	init_apartment();
-	Uri uri(L"http://aka.ms/cppwinrt");
-	printf("Hello, %ls!\n", uri.AbsoluteUri().c_str());
+	Notidownload(dctx).get();
 	return 0;
 }
