@@ -55,7 +55,8 @@ IAsyncAction NotiSignledownload(const wchar_t *url, const wchar_t *savefile) {
     }
     printf("download url: %ls %ls\n", url, fulldir.c_str());
     HttpBaseProtocolFilter baseFilter;
-    baseFilter.AllowAutoRedirect(true);
+    baseFilter.AllowAutoRedirect(false);
+    baseFilter.AllowUI(true);
     // printf("HTTP version: %d\n",baseFilter.MaxVersion()); default enable
     // HTTP2
     HttpClient client(baseFilter);
@@ -65,7 +66,23 @@ IAsyncAction NotiSignledownload(const wchar_t *url, const wchar_t *savefile) {
 
     auto resp = co_await client.GetAsync(
         uri, HttpCompletionOption::ResponseHeadersRead); /// Only read header.
-    resp.EnsureSuccessStatusCode();
+    int times = 0;
+    while ((resp.StatusCode() == HttpStatusCode::Found ||
+            resp.StatusCode() == HttpStatusCode::MovedPermanently ||
+            resp.StatusCode() == HttpStatusCode::TemporaryRedirect) &&
+           times < 3) {
+      auto location = resp.Headers().Location();
+      printf("Redirect to %ls\n", location.AbsoluteUri().c_str());
+      resp = co_await client.GetAsync(
+          location, HttpCompletionOption::ResponseHeadersRead);
+      times++;
+    }
+
+    if (!resp.IsSuccessStatusCode()) {
+      printf("StatusCode: %d\n", resp.StatusCode());
+      return;
+    }
+
     if (resp.Version() == HttpVersion::Http20) {
       printf("HTTP 2.0\n");
     }
@@ -95,17 +112,19 @@ IAsyncAction NotiSignledownload(const wchar_t *url, const wchar_t *savefile) {
         CreationCollisionOption::ReplaceExisting); /// replace existing
     auto stream = co_await file.OpenAsync(FileAccessMode::ReadWrite);
     // HttpProgress
-    auto pbh = AsyncOperationProgressHandler<uint64_t, uint64_t>(
-        [&](IAsyncOperationWithProgress<uint64_t, uint64_t>, uint64_t pb) {
-          wprintf(L"download %llu\n", pb);
-        });
-    auto aspb = resp.Content().WriteToStreamAsync(stream);
-    aspb.Progress(pbh);
 
-    auto result = co_await aspb;
+    auto task = resp.Content().WriteToStreamAsync(stream);
+    task.Progress([](const IAsyncOperationWithProgress<uint64_t, uint64_t> &,
+                     const uint64_t &pb) {
+      //
+      wprintf(L"download %llu\n", pb);
+    });
+    // await stream.FlushAsync();
+
+    auto result = co_await task;
     wprintf(L"total %llu\n", result);
   } catch (const hresult_error &e) {
-    printf("download error: %ls\n", e.message().c_str());
+    printf("download error: 0x%08x %ls\n", e.code(), e.message().c_str());
   } catch (const std::exception &e) {
     printf("download url: %s\n", e.what());
   }
