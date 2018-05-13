@@ -13,9 +13,15 @@ using IAsyncHttpResultHandler =
     IAsyncOperationWithProgress<Streams::IBuffer *, HttpProgress>;
 
 std::wstring PathFileName(const wchar_t *begin, const wchar_t *end) {
+  if (begin == end) {
+    return std::wstring(L"index.html");
+  }
   std::wstring filename(begin, end - begin);
-  while (filename.back() == '/') {
+  while (!filename.empty() && filename.back() == '/') {
     filename.pop_back();
+  }
+  if (filename.empty()) {
+    return std::wstring(L"index.html");
   }
   auto pos = filename.rfind('/');
   if (pos != std::wstring::npos) {
@@ -53,7 +59,8 @@ IAsyncAction NotiSignledownload(const wchar_t *url, const wchar_t *savefile) {
     // printf("HTTP version: %d\n",baseFilter.MaxVersion()); default enable
     // HTTP2
     HttpClient client(baseFilter);
-    client.DefaultRequestHeaders().Append(L"User-Agent", L"noti/1.0");
+    client.DefaultRequestHeaders().Append(
+        L"User-Agent", L"Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
     Uri uri(url);
 
     auto resp = co_await client.GetAsync(
@@ -63,9 +70,12 @@ IAsyncAction NotiSignledownload(const wchar_t *url, const wchar_t *savefile) {
       printf("HTTP 2.0\n");
     }
 
-    if (resp.Headers().HasKey(L"Content-Disposition")) {
-      auto disp = resp.Headers().Lookup(L"Content-Disposition");
-      printf("Content-Disposition: %ls\n", disp.c_str());
+    if (filename.empty() && resp.Content().Headers().ContentDisposition()) {
+      if (!resp.Content().Headers().ContentDisposition().FileName().empty()) {
+        filename.assign(
+            resp.Content().Headers().ContentDisposition().FileName().c_str());
+        printf("use filename %ls\n", filename.c_str());
+      }
     }
 
     if (filename.empty()) {
@@ -91,6 +101,7 @@ IAsyncAction NotiSignledownload(const wchar_t *url, const wchar_t *savefile) {
         });
     auto aspb = resp.Content().WriteToStreamAsync(stream);
     aspb.Progress(pbh);
+
     auto result = co_await aspb;
     wprintf(L"total %llu\n", result);
   } catch (const hresult_error &e) {
