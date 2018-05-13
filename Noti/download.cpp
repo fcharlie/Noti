@@ -12,6 +12,18 @@ using namespace Windows::Storage::Streams;
 using IAsyncHttpResultHandler =
     IAsyncOperationWithProgress<Streams::IBuffer *, HttpProgress>;
 
+std::wstring PathFileName(const wchar_t *begin, const wchar_t *end) {
+  std::wstring filename(begin, end - begin);
+  while (filename.back() == '/') {
+    filename.pop_back();
+  }
+  auto pos = filename.rfind('/');
+  if (pos != std::wstring::npos) {
+    return filename.substr(pos + 1);
+  }
+  return filename;
+}
+
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
 /*
 HttpBaseProtocolFilter support HTTP2 by default.
@@ -44,25 +56,22 @@ IAsyncAction NotiSignledownload(const wchar_t *url, const wchar_t *savefile) {
     client.DefaultRequestHeaders().Append(L"User-Agent", L"noti/1.0");
     Uri uri(url);
 
-    printf("request...  %ls\n",
-           client.DefaultRequestHeaders().UserAgent().ToString().c_str());
     auto resp = co_await client.GetAsync(
         uri, HttpCompletionOption::ResponseHeadersRead); /// Only read header.
     resp.EnsureSuccessStatusCode();
+    if (resp.Version() == HttpVersion::Http20) {
+      printf("HTTP 2.0\n");
+    }
+
     if (resp.Headers().HasKey(L"Content-Disposition")) {
       auto disp = resp.Headers().Lookup(L"Content-Disposition");
       printf("Content-Disposition: %ls\n", disp.c_str());
     }
 
     if (filename.empty()) {
-      auto begin = uri.Path().c_str();
-      auto end = begin + uri.Path().size();
-      auto iter = end;
-      for (; iter != begin; iter--) {
-        if (*iter == '/') {
-          filename.assign(iter, end);
-        }
-      }
+      filename = PathFileName(uri.Path().c_str(),
+                              uri.Path().c_str() + uri.Path().size());
+      printf("filename: %ls\n", filename.c_str());
     }
 
     uint64_t blen = 0;
@@ -71,11 +80,8 @@ IAsyncAction NotiSignledownload(const wchar_t *url, const wchar_t *savefile) {
     /// If cannot download some dir,
     auto folder = co_await StorageFolder::GetFolderFromPathAsync(
         fulldir); /// Must fullpath
-    if (filename.empty()) {
-      ///
-    }
     auto file = co_await folder.CreateFileAsync(
-        L"filename.zip",
+        filename,
         CreationCollisionOption::ReplaceExisting); /// replace existing
     auto stream = co_await file.OpenAsync(FileAccessMode::ReadWrite);
     // HttpProgress
