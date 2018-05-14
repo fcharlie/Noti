@@ -97,6 +97,7 @@
     <ClInclude Include="argv.hpp" />
     <ClInclude Include="noti.hpp" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="progress.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="download.cpp" />

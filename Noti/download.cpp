@@ -9,9 +9,6 @@ using namespace Windows::Web::Http::Filters;
 using namespace Windows::Storage;
 using namespace Windows::Storage::Streams;
 
-using IAsyncHttpResultHandler =
-    IAsyncOperationWithProgress<Streams::IBuffer *, HttpProgress>;
-
 std::wstring PathFileName(const wchar_t *begin, const wchar_t *end) {
   if (begin == end) {
     return std::wstring(L"index.html");
@@ -34,7 +31,8 @@ std::wstring PathFileName(const wchar_t *begin, const wchar_t *end) {
 /*
 HttpBaseProtocolFilter support HTTP2 by default.
 */
-IAsyncAction NotiSignledownload(const wchar_t *url, const wchar_t *savefile) {
+IAsyncAction NotiSignledownload(const wchar_t *url, const wchar_t *savefile,
+                                const Dcontext &dctx) {
   try {
     std::wstring fulldir, filename;
     if (savefile != nullptr) {
@@ -70,7 +68,7 @@ IAsyncAction NotiSignledownload(const wchar_t *url, const wchar_t *savefile) {
     while ((resp.StatusCode() == HttpStatusCode::Found ||
             resp.StatusCode() == HttpStatusCode::MovedPermanently ||
             resp.StatusCode() == HttpStatusCode::TemporaryRedirect) &&
-           times < 3) {
+           (times <= dctx.tries)) {
       auto location = resp.Headers().Location();
       printf("Redirect to %ls\n", location.AbsoluteUri().c_str());
       resp = co_await client.GetAsync(
@@ -132,7 +130,7 @@ IAsyncAction NotiSignledownload(const wchar_t *url, const wchar_t *savefile) {
 
 IAsyncAction Notidownload(const Dcontext &dctx) {
   try {
-    co_await NotiSignledownload(dctx.urls[0].c_str(), nullptr);
+    co_await NotiSignledownload(dctx.urls[0].c_str(), nullptr, dctx);
   } catch (const hresult_error &e) {
     printf("open dir: %ls\n", e.message().c_str());
   } catch (const std::exception &e) {

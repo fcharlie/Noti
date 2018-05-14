@@ -24,6 +24,9 @@
     <ClInclude Include="noti.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="progress.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
