@@ -112,13 +112,11 @@ IAsyncAction NotiSignledownload(const wchar_t *url, const wchar_t *savefile,
     // HttpProgress
 
     auto task = resp.Content().WriteToStreamAsync(stream);
-    task.Progress([](const IAsyncOperationWithProgress<uint64_t, uint64_t> &,
+    task.Progress([](const IAsyncOperationWithProgress<uint64_t, uint64_t> &ab,
                      const uint64_t &pb) {
       //
       wprintf(L"download %llu\n", pb);
     });
-    // await stream.FlushAsync();
-
     auto result = co_await task;
     wprintf(L"total %llu\n", result);
   } catch (const hresult_error &e) {
