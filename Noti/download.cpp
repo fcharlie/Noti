@@ -112,7 +112,7 @@ IAsyncAction NotiSignledownload(const wchar_t *url, const wchar_t *savefile,
     // HttpProgress
 
     auto task = resp.Content().WriteToStreamAsync(stream);
-    task.Progress([](const IAsyncOperationWithProgress<uint64_t, uint64_t> &ab,
+    task.Progress([](const IAsyncOperationWithProgress<uint64_t, uint64_t> &,
                      const uint64_t &pb) {
       //
       wprintf(L"download %llu\n", pb);

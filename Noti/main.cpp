@@ -1,9 +1,9 @@
 ﻿// main.cpp : Defines the entry point for the console application.
 //
-
+#include "pch.h"
+//
 #include "argv.hpp"
 #include "noti.hpp"
-#include "pch.h"
 
 using namespace winrt;
 using namespace Windows::Foundation;
@@ -14,14 +14,17 @@ ErrorResult Fromwchars(std::wstring_view wsv, Integer &iv) {
 }
 
 ErrorResult Fromwchars(std::wstring_view wsv, bool &bv) {
-  if (_wcsicmp(wsv.data(), L"true") == 0 || _wcsicmp(wsv.data(), L"on") == 0 ||
-      _wcsicmp(wsv.data(), L"yes") == 0 || wsv.compare(L"1") == 0) {
+
+  if (_wcsnicmp(wsv.data(), L"true", wsv.size()) == 0 ||
+      _wcsnicmp(wsv.data(), L"on", wsv.size()) == 0 ||
+      _wcsnicmp(wsv.data(), L"yes", wsv.size()) == 0 ||
+      wsv.compare(L"1") == 0) {
     bv = true;
     return ErrorResult{};
   }
-  if (_wcsicmp(wsv.data(), L"false") == 0 ||
-      _wcsicmp(wsv.data(), L"off") == 0 || _wcsicmp(wsv.data(), L"no") == 0 ||
-      wsv.compare(L"0") == 0) {
+  if (_wcsnicmp(wsv.data(), L"false", wsv.size()) == 0 ||
+      _wcsnicmp(wsv.data(), L"off", wsv.size()) == 0 ||
+      _wcsnicmp(wsv.data(), L"no", wsv.size()) == 0 || wsv.compare(L"0") == 0) {
     bv = false;
     return ErrorResult{};
   }
@@ -56,10 +59,16 @@ int ParseArgvImplement(int Argc, wchar_t **Argv, Dcontext &dctx) {
       {L"output", ParseArgv::required_argument, L'O'},
       {L"tries", ParseArgv::required_argument, L'T'},
       {L"version", ParseArgv::no_argument, L'v'},
+      {L"link", ParseArgv::no_argument, 0},
       {L"verbose", ParseArgv::no_argument, L'V'}};
   auto err = pa.ParseArgument(
       opts, [&](int ch, std::wstring_view optarg, std::wstring_view raw) {
         switch (ch) {
+        case 0:
+          if (raw.compare(L"link") == 0) {
+            wprintf(L"link \n");
+          }
+          break;
         case 'h':
           PrintUsage();
           exit(0);
@@ -104,7 +113,9 @@ int ParseArgvImplement(int Argc, wchar_t **Argv, Dcontext &dctx) {
           dctx.verbose = true;
           break;
         default:
-          wprintf(L"Error Argument: %s\n", raw != nullptr ? raw : L"unknown");
+          printf("%d\n", ch);
+          wprintf(L"error\n");
+          wprintf(L"Error Argument: %*.s\n", (int)raw.size(), raw.data());
           return false;
         }
         return true;
@@ -123,10 +134,11 @@ int ParseArgvImplement(int Argc, wchar_t **Argv, Dcontext &dctx) {
 // --content-disposition
 int wmain(int argc, wchar_t **argv) {
   Dcontext dctx;
+  
   if (ParseArgvImplement(argc, argv, dctx) != 0) {
     return 1;
   }
-  init_apartment();
-  Notidownload(dctx).get();
+  //init_apartment();
+  //Notidownload(dctx).get();
   return 0;
 }
