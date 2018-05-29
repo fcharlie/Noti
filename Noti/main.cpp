@@ -59,15 +59,13 @@ int ParseArgvImplement(int Argc, wchar_t **Argv, Dcontext &dctx) {
       {L"output", ParseArgv::required_argument, L'O'},
       {L"tries", ParseArgv::required_argument, L'T'},
       {L"version", ParseArgv::no_argument, L'v'},
-      {L"link", ParseArgv::no_argument, 0},
+      {L"link", ParseArgv::no_argument, 301},
       {L"verbose", ParseArgv::no_argument, L'V'}};
   auto err = pa.ParseArgument(
       opts, [&](int ch, std::wstring_view optarg, std::wstring_view raw) {
         switch (ch) {
-        case 0:
-          if (raw.compare(L"link") == 0) {
-            wprintf(L"link \n");
-          }
+        case 301:
+          wprintf(L"link flags\n");
           break;
         case 'h':
           PrintUsage();
@@ -134,11 +132,11 @@ int ParseArgvImplement(int Argc, wchar_t **Argv, Dcontext &dctx) {
 // --content-disposition
 int wmain(int argc, wchar_t **argv) {
   Dcontext dctx;
-  
+
   if (ParseArgvImplement(argc, argv, dctx) != 0) {
     return 1;
   }
-  //init_apartment();
-  //Notidownload(dctx).get();
+  init_apartment();
+  Notidownload(dctx).get();
   return 0;
 }
