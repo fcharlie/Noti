@@ -137,6 +137,9 @@ int wmain(int argc, wchar_t **argv) {
     return 1;
   }
   init_apartment();
+  if (dctx.urls.empty()) {
+    return 1;
+  }
   Notidownload(dctx).get();
   return 0;
 }
